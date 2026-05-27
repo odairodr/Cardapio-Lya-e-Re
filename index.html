@@ -99,13 +99,14 @@
             <!-- Decoração de fundo -->
             <i class="fas fa-fire absolute -bottom-6 -right-4 text-8xl text-red-600/10"></i>
 
-            <div class="flex justify-between items-start border-b border-zinc-800 pb-4 mb-4">
+            <!-- SEÇÃO: PRATO FEITO -->
+            <div class="flex justify-between items-start border-b border-zinc-800 pb-4 mb-6">
                 <div>
                     <span class="bg-red-700 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Prato Feito</span>
                 </div>
                 <div class="text-right">
                     <span class="text-sm text-gray-400">Valor Único</span>
-                    <p class="text-2xl font-bold text-green-400">R$ <span id="precoUnitario">25,00</span></p>
+                    <p class="text-2xl font-bold text-green-400">R$ 25,00</p>
                 </div>
             </div>
 
@@ -114,10 +115,21 @@
                 <!-- Injetado via JS -->
             </div>
 
-            <!-- Formulário de Pedido -->
-            <div class="space-y-4 border-t border-zinc-800 pt-4 relative z-10">
+            <!-- SEÇÃO: BEBIDAS -->
+            <div class="border-t border-zinc-800 pt-6 mt-6">
+                <h4 class="text-yellow-500 font-bold mb-4 flex items-center gap-2">
+                    <i class="fas fa-wine-glass-alt"></i> Bebidas
+                </h4>
                 
-                <!-- Quantidade -->
+                <div id="drinksContainer" class="space-y-3 relative z-10">
+                    <!-- Bebidas injetadas via JS -->
+                </div>
+            </div>
+
+            <!-- Formulário de Pedido -->
+            <div class="space-y-4 border-t border-zinc-800 pt-4 mt-6 relative z-10">
+                
+                <!-- Quantidade de Marmitas -->
                 <div class="flex items-center justify-between bg-zinc-950 p-3 rounded-lg border border-zinc-800">
                     <label class="font-semibold text-gray-300">Qtd. de Marmitas:</label>
                     <div class="flex items-center gap-3">
@@ -179,12 +191,25 @@
                      <input type="text" id="troco" placeholder="Ex: 50" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-red-600 transition" oninput="atualizarLinkWhatsApp()">
                 </div>
 
-                <!-- Total -->
-                <div class="flex justify-between items-center bg-black/50 p-4 rounded-lg mt-4 border border-zinc-800">
-                    <span class="text-gray-300">Total do Pedido:</span>
-                    <span id="totalPrice" class="text-2xl font-bold text-yellow-500">R$ 25,00</span>
+                <!-- Resumo do Pedido -->
+                <div class="bg-black/50 p-4 rounded-lg border border-zinc-800 space-y-2">
+                    <div class="flex justify-between text-gray-300 text-sm">
+                        <span>Subtotal (Marmita):</span>
+                        <span id="subtotalMarmita">R$ 25,00</span>
+                    </div>
+                    <div class="flex justify-between text-gray-300 text-sm">
+                        <span>Bebidas:</span>
+                        <span id="subtotalBebidas">R$ 0,00</span>
+                    </div>
+                    <div class="flex justify-between text-gray-300 text-sm">
+                        <span>Taxa de Entrega:</span>
+                        <span class="text-yellow-500 font-semibold">R$ 7,00</span>
+                    </div>
+                    <div class="border-t border-zinc-700 pt-2 flex justify-between items-center">
+                        <span class="text-gray-300 font-semibold">Total:</span>
+                        <span id="totalPrice" class="text-2xl font-bold text-yellow-500">R$ 32,00</span>
+                    </div>
                 </div>
-                <p class="text-center text-xs text-gray-500">*Taxa de entrega será calculada no WhatsApp</p>
 
                 <!-- Aviso de erro (invisível por padrão) -->
                 <div id="errorMsg" class="bg-red-900/30 border border-red-500 rounded p-3 mt-2 text-center hidden">
@@ -215,6 +240,7 @@
         const CONFIG = {
             whatsappNumber: '+556796797849',
             precoMarmita: 25.00,
+            taxaEntrega: 7.00,
             horarioAberturaFim: 11, // 11:00
             horarioAlmocoInicio: 11, // 11:00
             horarioAlmocoFim: 14, // 14:00
@@ -232,7 +258,18 @@
             6: { name: "Sábado", items: ["Arroz", "Feijão", "Frango frito", "Bife acebolado", "Purê", "Salada e creme de alho"] }
         };
 
+        // Bebidas com preços
+        const drinks = [
+            { name: "Guaraná Antártica 1L", price: 10.00, icon: "🟠" },
+            { name: "Funada Guaraná 1L", price: 10.00, icon: "🟠" },
+            { name: "Coca 600ml (Zero ou Original)", price: 8.00, icon: "🔴" },
+            { name: "Coca Mine", price: 5.00, icon: "🔴" },
+            { name: "Fanta Laranja", price: 5.00, icon: "🟠" },
+            { name: "Fanta Uva", price: 5.00, icon: "🟣" }
+        ];
+
         let quantidade = 1;
+        let bebidasSelecionadas = {};
         let menuDeHoje = null;
         let formularioValido = false;
         let abertoDePedidos = false;
@@ -283,6 +320,65 @@
             }
         }
 
+        // ========== GERENCIAMENTO DE BEBIDAS ==========
+        function renderizarBebidas() {
+            const container = document.getElementById('drinksContainer');
+            container.innerHTML = '';
+            
+            drinks.forEach((drink, index) => {
+                const drinkEl = document.createElement('div');
+                drinkEl.className = 'bg-zinc-950 p-3 rounded-lg border border-zinc-800 flex items-center justify-between animate-slide-in';
+                drinkEl.style.animationDelay = `${index * 0.05}s`;
+                
+                drinkEl.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">${drink.icon}</span>
+                        <div>
+                            <p class="text-white text-sm font-medium">${drink.name}</p>
+                            <p class="text-yellow-500 text-xs">R$ ${drink.price.toFixed(2).replace('.', ',')}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="mudarQtdBebida('${drink.name}', -1)" class="w-6 h-6 rounded bg-zinc-800 text-yellow-500 text-xs font-bold hover:bg-zinc-700 focus:outline-none transition">-</button>
+                        <span class="text-white font-bold w-4 text-center" id="qty-${drink.name}">0</span>
+                        <button type="button" onclick="mudarQtdBebida('${drink.name}', 1)" class="w-6 h-6 rounded bg-zinc-800 text-yellow-500 text-xs font-bold hover:bg-zinc-700 focus:outline-none transition">+</button>
+                    </div>
+                `;
+                
+                container.appendChild(drinkEl);
+            });
+        }
+
+        function mudarQtdBebida(drinkName, delta) {
+            if (!bebidasSelecionadas[drinkName]) {
+                bebidasSelecionadas[drinkName] = 0;
+            }
+            
+            bebidasSelecionadas[drinkName] += delta;
+            
+            if (bebidasSelecionadas[drinkName] < 0) {
+                bebidasSelecionadas[drinkName] = 0;
+            }
+            if (bebidasSelecionadas[drinkName] > 10) {
+                bebidasSelecionadas[drinkName] = 10;
+            }
+            
+            document.getElementById(`qty-${drinkName}`).innerText = bebidasSelecionadas[drinkName];
+            atualizarTotal();
+            atualizarLinkWhatsApp();
+        }
+
+        function obterPreçoBebida(drinkName) {
+            const drink = drinks.find(d => d.name === drinkName);
+            return drink ? drink.price : 0;
+        }
+
+        function calcularTotalBebidas() {
+            return Object.keys(bebidasSelecionadas).reduce((total, drinkName) => {
+                return total + (bebidasSelecionadas[drinkName] * obterPreçoBebida(drinkName));
+            }, 0);
+        }
+
         // ========== INICIALIZAÇÃO ==========
         function init() {
             // Pega o dia atual (0 a 6). 
@@ -313,7 +409,11 @@
                         </div>
                     `;
                 });
+
+                // Renderizar bebidas
+                renderizarBebidas();
             }
+            
             atualizarTotal();
             atualizarLinkWhatsApp();
             
@@ -332,7 +432,12 @@
         }
 
         function atualizarTotal() {
-            const total = quantidade * CONFIG.precoMarmita;
+            const subtotalMarmita = quantidade * CONFIG.precoMarmita;
+            const totalBebidas = calcularTotalBebidas();
+            const total = subtotalMarmita + totalBebidas + CONFIG.taxaEntrega;
+            
+            document.getElementById('subtotalMarmita').innerText = `R$ ${subtotalMarmita.toFixed(2).replace('.', ',')}`;
+            document.getElementById('subtotalBebidas').innerText = `R$ ${totalBebidas.toFixed(2).replace('.', ',')}`;
             document.getElementById('totalPrice').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
         }
 
@@ -371,20 +476,20 @@
 
             // Verifica se os campos obrigatórios estão preenchidos
             if (nome === "" || rua === "" || numero === "" || bairro === "") {
-                formularioValido = false;
                 btn.className = "btn-disabled w-full text-gray-300 font-bold text-lg py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 mt-2 transition transform cursor-not-allowed";
                 btn.href = "#";
                 return;
             }
 
             // Se tudo estiver preenchido corretamente
-            formularioValido = true;
             errorMsg.classList.add('hidden');
             
             // Ativa o visual verde do botão
             btn.className = "btn-whatsapp w-full text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 mt-2 transition transform hover:-translate-y-1";
 
-            const totalFormatado = (quantidade * CONFIG.precoMarmita).toFixed(2).replace('.', ',');
+            const subtotalMarmita = (quantidade * CONFIG.precoMarmita).toFixed(2).replace('.', ',');
+            const totalBebidas = calcularTotalBebidas().toFixed(2).replace('.', ',');
+            const totalGeral = (quantidade * CONFIG.precoMarmita + calcularTotalBebidas() + CONFIG.taxaEntrega).toFixed(2).replace('.', ',');
             
             // Montar a mensagem
             let msg = `*NOVO PEDIDO - LYA & RÊ* 🔥\n`;
@@ -393,6 +498,18 @@
             msg += `📋 *PEDIDO (Prato de ${menuDeHoje.name}):*\n`;
             msg += `*${quantidade}x* Marmita(s) do Dia\n`;
             if (obs !== "") msg += `_⚠️ Obs: ${obs}_\n`;
+            
+            // Adicionar bebidas se houver
+            const bebidasStr = Object.keys(bebidasSelecionadas).filter(name => bebidasSelecionadas[name] > 0);
+            if (bebidasStr.length > 0) {
+                msg += `\n🥤 *BEBIDAS:*\n`;
+                bebidasStr.forEach(drinkName => {
+                    const qty = bebidasSelecionadas[drinkName];
+                    const price = obterPreçoBebida(drinkName);
+                    msg += `${qty}x ${drinkName} - R$ ${(qty * price).toFixed(2).replace('.', ',')}\n`;
+                });
+            }
+            
             msg += `\n📍 *ENDEREÇO DE ENTREGA:*\n`;
             msg += `Rua: ${rua}, Nº ${numero}\n`;
             msg += `Bairro: ${bairro}\n`;
@@ -403,8 +520,11 @@
                 msg += `Troco para: R$ ${troco}\n`;
             }
             msg += `\n--------------------------------------\n`;
-            msg += `💰 *TOTAL DOS PRATOS: R$ ${totalFormatado}*\n`;
-            msg += `_( + Taxa de entrega a confirmar )_`;
+            msg += `💰 *RESUMO DO PEDIDO:*\n`;
+            msg += `Marmitas: R$ ${subtotalMarmita}\n`;
+            if (totalBebidas !== "0,00") msg += `Bebidas: R$ ${totalBebidas}\n`;
+            msg += `Taxa de Entrega: R$ 7,00\n`;
+            msg += `*TOTAL: R$ ${totalGeral}*`;
 
             // Atualiza o href do botão (link real)
             btn.href = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(msg)}`;
@@ -412,7 +532,12 @@
 
         // Função chamada quando clica no botão
         function verificarEnvio(event) {
-            if (!formularioValido) {
+            const nome = document.getElementById('nome').value.trim();
+            const rua = document.getElementById('rua').value.trim();
+            const numero = document.getElementById('numero').value.trim();
+            const bairro = document.getElementById('bairro').value.trim();
+
+            if (nome === "" || rua === "" || numero === "" || bairro === "") {
                 event.preventDefault();
                 document.getElementById('errorMsg').classList.remove('hidden');
                 mostrarToast('Complete o formulário para enviar!', 'error');
