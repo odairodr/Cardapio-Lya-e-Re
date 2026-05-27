@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardápio do Dia - Lya & Rê</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #121212;
+            color: #f1f1f1;
+            background-image: radial-gradient(circle at top, #3a0a0a 0%, #121212 60%);
+            min-height: 100vh;
+        }
+        .logo-font {
+            font-family: 'Playfair Display', serif;
+        }
+        .fire-text {
+            background: linear-gradient(to top, #ff4500, #ff8c00, #ffcd00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card-glowing {
+            box-shadow: 0 0 20px rgba(220, 38, 38, 0.15);
+        }
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+        }
+        .btn-whatsapp:hover {
+            background: linear-gradient(135deg, #128C7E, #075E54);
+        }
+        .btn-disabled {
+            background: #4b5563;
+            cursor: not-allowed;
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        /* Animação de entrada suave */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        /* Toast de notificação */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: #25D366;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+            z-index: 1000;
+        }
+        .toast.error {
+            background: #dc2626;
+        }
+        .toast.info {
+            background: #3b82f6;
+        }
+    </style>
+</head>
+<body class="pb-10">
+
+    <!-- Header -->
+    <header class="pt-8 pb-6 px-4 text-center border-b border-red-900/50 bg-black/40 backdrop-blur-sm sticky top-0 z-50">
+        <h1 class="logo-font text-5xl font-bold fire-text mb-1">Lya & Rê</h1>
+        <p class="text-red-400 font-semibold tracking-widest text-sm uppercase">Feira do Produtor</p>
+        <p id="horarioStatus" class="text-xs text-gray-400 mt-2">⏰ Verificando horário...</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-md mx-auto px-4 py-6">
+        
+        <!-- Título Dinâmico -->
+        <div class="text-center mb-6">
+            <h2 class="text-xl text-gray-400">Cardápio de Hoje</h2>
+            <h3 id="dayTitle" class="text-3xl font-bold text-yellow-500 mt-1 uppercase tracking-wider">Carregando...</h3>
+        </div>
+
+        <!-- Cardápio do Dia -->
+        <div id="menuCard" class="bg-zinc-900 rounded-2xl p-6 border border-red-900/30 card-glowing relative overflow-hidden hidden animate-slide-in">
+            <!-- Decoração de fundo -->
+            <i class="fas fa-fire absolute -bottom-6 -right-4 text-8xl text-red-600/10"></i>
+
+            <div class="flex justify-between items-start border-b border-zinc-800 pb-4 mb-4">
+                <div>
+                    <span class="bg-red-700 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Prato Feito</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-sm text-gray-400">Valor Único</span>
+                    <p class="text-2xl font-bold text-green-400">R$ <span id="precoUnitario">25,00</span></p>
+                </div>
+            </div>
+
+            <!-- Lista de Itens do Prato -->
+            <div id="menuItems" class="space-y-3 mb-6 relative z-10">
+                <!-- Injetado via JS -->
+            </div>
+
+            <!-- Formulário de Pedido -->
+            <div class="space-y-4 border-t border-zinc-800 pt-4 relative z-10">
+                
+                <!-- Quantidade -->
+                <div class="flex items-center justify-between bg-zinc-950 p-3 rounded-lg border border-zinc-800">
+                    <label class="font-semibold text-gray-300">Qtd. de Marmitas:</label>
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="changeQty(-1)" class="w-8 h-8 rounded bg-zinc-800 text-yellow-500 font-bold hover:bg-zinc-700 focus:outline-none transition">-</button>
+                        <span id="qtyDisplay" class="text-xl font-bold w-6 text-center">1</span>
+                        <button type="button" onclick="changeQty(1)" class="w-8 h-8 rounded bg-zinc-800 text-yellow-500 font-bold hover:bg-zinc-700 focus:outline-none transition">+</button>
+                    </div>
+                </div>
+
+                <!-- Dados de Entrega -->
+                <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-800 space-y-3">
+                    <h4 class="text-yellow-500 font-semibold mb-2 border-b border-zinc-800 pb-1">📍 Dados de Entrega</h4>
+                    
+                    <div>
+                        <label for="nome" class="block text-xs text-gray-400 mb-1">Seu Nome*</label>
+                        <input type="text" id="nome" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-red-600 transition" placeholder="Ex: João da Silva" oninput="atualizarLinkWhatsApp()">
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="col-span-2">
+                            <label for="rua" class="block text-xs text-gray-400 mb-1">Rua*</label>
+                            <input type="text" id="rua" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-red-600 transition" placeholder="Ex: Av. Brasil" oninput="atualizarLinkWhatsApp()">
+                        </div>
+                        <div class="col-span-1">
+                            <label for="numero" class="block text-xs text-gray-400 mb-1">Nº*</label>
+                            <input type="text" id="numero" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-red-600 transition" placeholder="123" oninput="atualizarLinkWhatsApp()">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="bairro" class="block text-xs text-gray-400 mb-1">Bairro*</label>
+                        <input type="text" id="bairro" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-red-600 transition" placeholder="Ex: Centro" oninput="atualizarLinkWhatsApp()">
+                    </div>
+                    
+                    <div>
+                        <label for="pontoRef" class="block text-xs text-gray-400 mb-1">Ponto de Referência</label>
+                        <input type="text" id="pontoRef" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-red-600 transition" oninput="atualizarLinkWhatsApp()">
+                    </div>
+                </div>
+
+                <!-- Observações -->
+                <div>
+                    <label for="obs" class="block text-xs text-gray-400 mb-1">Observações do Prato (Opcional)</label>
+                    <textarea id="obs" rows="2" placeholder="Ex: Separar feijão, sem salada..." class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-red-600 transition resize-none" oninput="atualizarLinkWhatsApp()"></textarea>
+                </div>
+
+                <!-- Forma de Pagamento -->
+                <div>
+                    <label for="pagamento" class="block text-xs text-gray-400 mb-1">Forma de Pagamento*</label>
+                    <select id="pagamento" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-red-600 transition" onchange="atualizarLinkWhatsApp()">
+                        <option value="Pix">Pix (Chave com o entregador)</option>
+                        <option value="Cartão - Maquininha">Cartão (Levar Maquininha)</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                    </select>
+                </div>
+
+                <div id="trocoDiv" class="hidden">
+                     <label for="troco" class="block text-xs text-gray-400 mb-1">Troco para quanto?</label>
+                     <input type="text" id="troco" placeholder="Ex: 50" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-red-600 transition" oninput="atualizarLinkWhatsApp()">
+                </div>
+
+                <!-- Total -->
+                <div class="flex justify-between items-center bg-black/50 p-4 rounded-lg mt-4 border border-zinc-800">
+                    <span class="text-gray-300">Total do Pedido:</span>
+                    <span id="totalPrice" class="text-2xl font-bold text-yellow-500">R$ 25,00</span>
+                </div>
+                <p class="text-center text-xs text-gray-500">*Taxa de entrega será calculada no WhatsApp</p>
+
+                <!-- Aviso de erro (invisível por padrão) -->
+                <div id="errorMsg" class="bg-red-900/30 border border-red-500 rounded p-3 mt-2 text-center hidden">
+                    <p class="text-red-400 text-sm font-bold"><i class="fas fa-exclamation-triangle mr-2"></i>Preencha os campos com (*) para liberar o botão.</p>
+                </div>
+
+                <!-- Botão Enviar (Link Dinâmico) -->
+                <a id="btnWhatsapp" href="#" target="_blank" onclick="return verificarEnvio(event)" class="btn-disabled w-full text-gray-300 font-bold text-lg py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 mt-2 transition transform">
+                    <i class="fab fa-whatsapp text-2xl"></i>
+                    Enviar Pedido
+                </a>
+
+            </div>
+        </div>
+
+        <!-- Mensagem de Fechado -->
+        <div id="closedMessage" class="hidden text-center bg-zinc-900 p-8 rounded-2xl border border-zinc-800 animate-slide-in">
+            <i class="fas fa-store-alt-slash text-5xl text-gray-600 mb-4"></i>
+            <h3 class="text-2xl font-bold text-white mb-2">Estamos Fechados</h3>
+            <p class="text-gray-400 mb-4">Hoje é nosso dia de descanso. Voltamos amanhã com um cardápio delicioso!</p>
+            <div id="proximaAberturaInfo" class="text-yellow-500 text-sm font-semibold"></div>
+        </div>
+
+    </main>
+
+    <script>
+        // Configuração
+        const CONFIG = {
+            whatsappNumber: '+556796797849',
+            precoMarmita: 25.00,
+            horarioAberturaFim: 11, // 11:00
+            horarioAlmocoInicio: 11, // 11:00
+            horarioAlmocoFim: 14, // 14:00
+            diasClosed: [1], // Segunda fechada
+        };
+
+        // Dados do Cardápio
+        const menus = {
+            0: { name: "Domingo", items: ["Arroz", "Feijão", "Panqueca de carne", "Bife acebolado"] },
+            1: null, // Segunda Fechado
+            2: { name: "Terça-feira", items: ["Arroz", "Feijão", "Bife", "Batata frita"] },
+            3: { name: "Quarta-feira", items: ["Arroz", "Feijão", "Macarrão com molho", "Bife acebolado", "Linguiça"] },
+            4: { name: "Quinta-feira", items: ["Arroz", "Feijão", "Mandioca", "Porco frito", "Bife acebolado"] },
+            5: { name: "Sexta-feira", items: ["Arroz", "Feijão", "Bife", "Carne de panela"] },
+            6: { name: "Sábado", items: ["Arroz", "Feijão", "Frango frito", "Bife acebolado", "Purê", "Salada e creme de alho"] }
+        };
+
+        let quantidade = 1;
+        let menuDeHoje = null;
+        let formularioValido = false;
+        let abertoDePedidos = false;
+
+        // ========== FUNÇÕES UTILITÁRIAS ==========
+        function mostrarToast(mensagem, tipo = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${tipo}`;
+            toast.innerHTML = `<i class="fas fa-${tipo === 'error' ? 'exclamation-circle' : tipo === 'info' ? 'info-circle' : 'check-circle'} mr-2"></i>${mensagem}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-out forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function verificarHorarioAberto() {
+            const agora = new Date();
+            const hora = agora.getHours();
+            const minutos = agora.getMinutes();
+            const horaDecimal = hora + minutos / 60;
+            
+            // Verificar se é dia fechado
+            if (CONFIG.diasClosed.includes(agora.getDay())) {
+                return false;
+            }
+            
+            // Verificar se está no horário de funcionamento
+            return horaDecimal >= CONFIG.horarioAberturaFim && horaDecimal < CONFIG.horarioAlmocoFim;
+        }
+
+        function atualizarStatusHorario() {
+            const agora = new Date();
+            const hora = agora.getHours();
+            const minutos = agora.getMinutes();
+            const statusEl = document.getElementById('horarioStatus');
+            
+            if (verificarHorarioAberto()) {
+                statusEl.innerHTML = '<i class="fas fa-check-circle text-green-500"></i> Aberto para pedidos!';
+                statusEl.className = 'text-xs text-green-400 mt-2';
+                abertoDePedidos = true;
+            } else {
+                const horaProxima = agora.getDay() === 0 ? 'Segunda' : 'Amanhã';
+                statusEl.innerHTML = `<i class="fas fa-clock text-orange-500"></i> Fechado. Reabre ${horaProxima} às 11h`;
+                statusEl.className = 'text-xs text-orange-400 mt-2';
+                abertoDePedidos = false;
+            }
+        }
+
+        // ========== INICIALIZAÇÃO ==========
+        function init() {
+            // Pega o dia atual (0 a 6). 
+            const today = new Date().getDay();
+            menuDeHoje = menus[today];
+
+            const dayTitle = document.getElementById('dayTitle');
+            const menuCard = document.getElementById('menuCard');
+            const closedMessage = document.getElementById('closedMessage');
+            const menuItemsContainer = document.getElementById('menuItems');
+
+            atualizarStatusHorario();
+
+            if (menuDeHoje === null) {
+                dayTitle.innerText = "Segunda-feira";
+                closedMessage.classList.remove('hidden');
+                document.getElementById('proximaAberturaInfo').innerText = '↳ Voltamos Terça-feira às 11h';
+            } else {
+                dayTitle.innerText = menuDeHoje.name;
+                menuCard.classList.remove('hidden');
+                
+                menuItemsContainer.innerHTML = '';
+                menuDeHoje.items.forEach((item, index) => {
+                    menuItemsContainer.innerHTML += `
+                        <div class="flex items-center gap-3 text-lg font-medium text-zinc-200 animate-slide-in" style="animation-delay: ${index * 0.1}s">
+                            <i class="fas fa-fire text-red-600 text-sm"></i>
+                            ${item}
+                        </div>
+                    `;
+                });
+            }
+            atualizarTotal();
+            atualizarLinkWhatsApp();
+            
+            // Atualizar status a cada minuto
+            setInterval(atualizarStatusHorario, 60000);
+        }
+
+        // ========== GERENCIAMENTO DE QUANTIDADE E PREÇO ==========
+        function changeQty(delta) {
+            quantidade += delta;
+            if (quantidade < 1) quantidade = 1;
+            if (quantidade > 30) quantidade = 30;
+            document.getElementById('qtyDisplay').innerText = quantidade;
+            atualizarTotal();
+            atualizarLinkWhatsApp();
+        }
+
+        function atualizarTotal() {
+            const total = quantidade * CONFIG.precoMarmita;
+            document.getElementById('totalPrice').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        }
+
+        // ========== GERENCIAMENTO DE TROCO ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            const pagamentoSelect = document.getElementById('pagamento');
+            if (pagamentoSelect) {
+                pagamentoSelect.addEventListener('change', function() {
+                    const trocoDiv = document.getElementById('trocoDiv');
+                    if (this.value === 'Dinheiro') {
+                        trocoDiv.classList.remove('hidden');
+                    } else {
+                        trocoDiv.classList.add('hidden');
+                        document.getElementById('troco').value = '';
+                    }
+                    atualizarLinkWhatsApp();
+                });
+            }
+        });
+
+        // ========== VALIDAÇÃO E LINK WHATSAPP ==========
+        function atualizarLinkWhatsApp() {
+            if (!menuDeHoje) return;
+
+            const nome = document.getElementById('nome').value.trim();
+            const rua = document.getElementById('rua').value.trim();
+            const numero = document.getElementById('numero').value.trim();
+            const bairro = document.getElementById('bairro').value.trim();
+            const pontoRef = document.getElementById('pontoRef').value.trim();
+            const obs = document.getElementById('obs').value.trim();
+            const pagamento = document.getElementById('pagamento').value;
+            const troco = document.getElementById('troco').value.trim();
+            
+            const btn = document.getElementById('btnWhatsapp');
+            const errorMsg = document.getElementById('errorMsg');
+
+            // Verifica se os campos obrigatórios estão preenchidos
+            if (nome === "" || rua === "" || numero === "" || bairro === "") {
+                formularioValido = false;
+                btn.className = "btn-disabled w-full text-gray-300 font-bold text-lg py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 mt-2 transition transform cursor-not-allowed";
+                btn.href = "#";
+                return;
+            }
+
+            // Se tudo estiver preenchido corretamente
+            formularioValido = true;
+            errorMsg.classList.add('hidden');
+            
+            // Ativa o visual verde do botão
+            btn.className = "btn-whatsapp w-full text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 mt-2 transition transform hover:-translate-y-1";
+
+            const totalFormatado = (quantidade * CONFIG.precoMarmita).toFixed(2).replace('.', ',');
+            
+            // Montar a mensagem
+            let msg = `*NOVO PEDIDO - LYA & RÊ* 🔥\n`;
+            msg += `--------------------------------------\n\n`;
+            msg += `👤 *Cliente:* ${nome}\n\n`;
+            msg += `📋 *PEDIDO (Prato de ${menuDeHoje.name}):*\n`;
+            msg += `*${quantidade}x* Marmita(s) do Dia\n`;
+            if (obs !== "") msg += `_⚠️ Obs: ${obs}_\n`;
+            msg += `\n📍 *ENDEREÇO DE ENTREGA:*\n`;
+            msg += `Rua: ${rua}, Nº ${numero}\n`;
+            msg += `Bairro: ${bairro}\n`;
+            if (pontoRef !== "") msg += `Ref: ${pontoRef}\n`;
+            msg += `\n💳 *PAGAMENTO:*\n`;
+            msg += `Forma: ${pagamento}\n`;
+            if (pagamento === 'Dinheiro' && troco !== "") {
+                msg += `Troco para: R$ ${troco}\n`;
+            }
+            msg += `\n--------------------------------------\n`;
+            msg += `💰 *TOTAL DOS PRATOS: R$ ${totalFormatado}*\n`;
+            msg += `_( + Taxa de entrega a confirmar )_`;
+
+            // Atualiza o href do botão (link real)
+            btn.href = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(msg)}`;
+        }
+
+        // Função chamada quando clica no botão
+        function verificarEnvio(event) {
+            if (!formularioValido) {
+                event.preventDefault();
+                document.getElementById('errorMsg').classList.remove('hidden');
+                mostrarToast('Complete o formulário para enviar!', 'error');
+                document.getElementById('nome').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+            if (!abertoDePedidos) {
+                event.preventDefault();
+                mostrarToast('Estamos fechados no momento!', 'error');
+                return false;
+            }
+            mostrarToast('Pedido enviado com sucesso! 🎉', 'success');
+            return true;
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
